@@ -5,60 +5,71 @@
 /*                                                    +:+ +:+         +:+     */
 /*   By: tcali <tcali@student.42.fr>                +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
-/*   Created: 2025/01/07 13:30:06 by tcali             #+#    #+#             */
-/*   Updated: 2025/01/09 13:01:59 by tcali            ###   ########.fr       */
+/*   Created: 2025/01/21 08:43:18 by tcali             #+#    #+#             */
+/*   Updated: 2025/01/21 13:17:33 by tcali            ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
-#include <stdlib.h>
 #include <unistd.h>
-#include <stddef.h>
+#include <stdio.h>
+#include <stdlib.h>
 #include "get_next_line.h"
 
-void	*ft_calloc(size_t elementCount, size_t elementSize)
+char	*ft_join_free(char *buffer, char *buf)
 {
-	size_t	*p;
+	char	*temp;
 
-	p = malloc (elementSize * elementCount);
-	if (p == NULL)
+	temp = ft_strjoin(buffer, buf);
+	return (free(buffer), free (buf), temp);
+}
+
+int	ft_strlen(const char *s)
+{
+	int	len;
+
+	if (!s)
 		return (0);
-	ft_bzero(p, elementCount * elementSize);
-	return (p);
+	len = 0;
+	while (s[len])
+		len++;
+	return (len);
 }
 
-void	ft_bzero(void *s, size_t n)
+char	*ft_strchr(const char *s, int c)
 {
-	unsigned char	*ptr;
-
-	ptr = (unsigned char *)s;
-	while (n--)
-		*ptr++ = 0;
-}
-
-size_t	ft_strlen(const char *str)
-{
-	int	i;
+	size_t	i;
 
 	i = 0;
-	while (str[i])
-		i++;
-	return (i);
-}
-
-int	ft_present(const char *str, char c)
-{
-	if (!str)
-		return (0);
-	while (*str)
+	while (s[i] != '\0')
 	{
-		if (*str == c)
-			return (1);
-		++str;
+		if (s[i] == (unsigned char)c)
+			return ((char *)&s[i]);
+		i++;
 	}
-	return (0);
+	if ((unsigned char)c == '\0')
+		return ((char *)&s[i]);
+	return (NULL);
 }
 
-char	*ft_strjoin(char const *s1, char const *s2)
+char	*ft_strdup(const char *source)
+{
+	int		i;
+	char	*copy;
+
+	i = 0;
+	copy = malloc (sizeof(char) * (ft_strlen(source) + 1));
+	if (!copy)
+		return (NULL);
+	while (source[i])
+	{
+		copy[i] = source[i];
+		i++;
+	}
+	copy[i] = '\0';
+	return (copy);
+}
+
+char	*ft_strjoin(char *s1, char *s2)
 {
 	int		i;
 	int		s1_len;

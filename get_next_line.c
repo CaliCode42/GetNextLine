@@ -5,114 +5,82 @@
 /*                                                    +:+ +:+         +:+     */
 /*   By: tcali <tcali@student.42.fr>                +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
-/*   Created: 2025/01/07 13:29:40 by tcali             #+#    #+#             */
-/*   Updated: 2025/01/10 17:54:53 by tcali            ###   ########.fr       */
+/*   Created: 2025/01/21 08:41:55 by tcali             #+#    #+#             */
+/*   Updated: 2025/01/21 13:41:21 by tcali            ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
 #include <unistd.h>
-#include <stdlib.h>
 #include <stdio.h>
+#include <stdlib.h>
 #include "get_next_line.h"
 
-char	*ft_join_free(char *str, char *buffer)
+char	*read_file(int fd, t_list *list)
 {
-	char	*tmp;
+	char	*temp;
+	char	*buffer;
 
-	tmp = ft_strjoin(str, buffer);
-	free(str);
-	return (tmp);
-}
-
-char	*read_file(int fd, char *str, t_buf *line)
-{
-	int	found_newline;
-
-	found_newline = 0;
-	if (!str)
-		str = ft_calloc(1, 1);
-	line->buffer = ft_calloc(BUFFER_SIZE + 1, sizeof(char));
-	line->bytes_read = 1;
-	while (line->bytes_read > 0 && found_newline == 0)
+	buffer = NULL;
+	list->bytes_read = 1;
+	printf("Start reading file...\n");
+	while (list->bytes_read > 0/* || (list->buf && *list->buf)*/)
 	{
-		line->bytes_read = read(fd, line->buffer, BUFFER_SIZE);
-		if (line->bytes_read == -1)
+		printf("Entering while loop... (bytes_read: %d, buf: %s)\n", list->bytes_read, list->buf);
+		if (list->buf && ft_strchr(list->buf, '\n'))
 		{
-			free (str);
-			free (line->buffer);
-			return (NULL);
+			buffer = ft_join_free(buffer, list->buf); 
+			list->buf = NULL;
+			return (buffer);
 		}
-		line->buffer[line->bytes_read] = 0;
-		str = ft_join_free(str, line->buffer);
-		if (ft_present(line->buffer, '\n'))
-			found_newline = 1;
+		temp = malloc(sizeof(char) * (BUFFER_SIZE + 1));
+		if (!temp)
+			return (NULL);
+		list->bytes_read = read(fd, temp, BUFFER_SIZE);
+		if (list->bytes_read < 0)
+			return (free(temp), free(buffer), NULL);
+		temp[list->bytes_read] = '\0';
+		buffer = ft_join_free(buffer, temp);
+		printf("\nread_file : buffer = [%s]\n", buffer);
 	}
-	free(line->buffer);
-	return (str);
+	return (buffer);
 }
 
-char	*ft_parse_line(char *buf)
+
+void	ft_parse_line(t_list *list)
 {
-	char	*line;
-	int		i;
-	int		j;
+	char	*new_line_index;
+	t_list	*new_node;
 
-	i = 0;
-	j = 0;
-	if (!buf)
-		return (NULL);
-	printf("avant ft_parse_line :\nbuf = [%s]\n", buf);
-	while (buf[i] && buf[i] != '\n')
-		i++;
-	printf("ft_parse_line après while :\nbuf = [%s]\n", buf);
-	line = ft_calloc(i + 2, sizeof(char));
-	while (j < i)
-	{
-		line[j] = buf[j];
-		j++;
-	}
-	printf("ft_parse_line après 2e while :\nbuf = [%s]\n", buf);
-	if (buf[i] == '\n' || buf[i] == '\0')
-		line[j] = '\n';
-	printf("ft_parse_line fin de ft :\nbuf = [%s]\n", buf);
-	return (line);
-}
-
-char	*ft_new_line(char *buf)
-{
-	int		i;
-	int		j;
-	char	*new_line;
-
-	i = 0;
-	j = 0;
-	while (buf[i] && buf[i] != '\n')
-		i++;
-	if (!buf[i])
-	{
-		free(buf);
-		return (NULL);
-	}
-	new_line = ft_calloc(ft_strlen(buf) - i + 1, sizeof(char));
-	i++;
-	while (buf[i])
-		new_line[j++] = buf[i++];
-	free(buf);
-	printf("après ft_new_line :\nbuf = [%s]\n", new_line);
-	return (new_line);
+	if (!list || !list->buf)
+		return ;
+	new_line_index = ft_strchr(list->buf, '\n');
+	if (!new_line_index)
+		return ;
+	new_node = malloc(sizeof(t_list));
+	if (new_node == NULL)
+		return ;
+	new_node->buf = ft_strdup(new_line_index + 1);
+	if (!new_node->buf)
+		return (free(new_node));
+	*new_line_index = '\0';
+	new_node->next = NULL;
+	list->next = new_node;
 }
 
 char	*get_next_line(int fd)
 {
-	static char	*buf;
-	t_buf		line;
+	static t_list	list;
+	char			*line;
 
 	if (fd < 0 || BUFFER_SIZE <= 0 || read(fd, 0, 0) < 0)
 		return (NULL);
-	buf = read_file(fd, buf, &line);
-	if (!buf)
+	list.buf = read_file(fd, &list);
+	//printf("list.buf = [%s]", list.buf);
+	if (list.buf == NULL)
 		return (NULL);
-	line.line = ft_parse_line(buf);
-	buf = ft_new_line(buf);
-	return (line.line);
+	line = ft_strdup(list.buf);
+	if (line == NULL)
+		return (free(list.buf), NULL);
+	ft_parse_line(&list);
+	return (line);
 }
